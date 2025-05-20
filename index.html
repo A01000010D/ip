@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Advanced IP Locator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.cdnfonts.com/css/thegoodmonolith" rel="stylesheet">
+  <style>
+    :root {
+      --phi: 1.618;
+      --base-width: 320px;
+      --main-font-size: 1.25rem;
+      --max-content-width: 650px;
+      --laptop-padding: 2.7rem;
+      --section-spacing: 1.9rem;
+    }
+    html, body {
+      background: #000;
+      color: #fff;
+      font-family: 'TheGoodMonolith', monospace;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      letter-spacing: 1px;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .container {
+      width: 100%;
+      max-width: var(--max-content-width);
+      margin: 0 auto;
+      padding: 0 var(--laptop-padding);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .section {
+      width: 100%;
+      margin-bottom: var(--section-spacing);
+    }
+    .section-title {
+      font-size: var(--main-font-size);
+      margin: 1.4rem 0 0.8rem 0;
+      border-bottom: 1.2px solid #444;
+      padding-bottom: 1px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      width: 100%;
+      max-width: 100%;
+      text-align: left;
+    }
+    .label {
+      font-size: 1.05rem;
+      color: #bbb;
+      min-width: 104px;
+      padding-right: 8px;
+      letter-spacing: 1.2px;
+      font-family: inherit;
+    }
+    .value {
+      font-size: var(--main-font-size);
+      color: #fff;
+      margin-bottom: 2px;
+      word-break: break-word;
+      letter-spacing: 1.1px;
+      font-family: inherit;
+    }
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 0.8rem;
+    }
+    .info-table td {
+      padding: 1.5px 0;
+      vertical-align: top;
+    }
+    @media (max-width: 900px) {
+      .container {
+        padding: 0 3vw;
+        max-width: 99vw;
+      }
+      .section { width: 100%; }
+      .section-title, .info-table { width: 99vw; max-width: 100vw; }
+    }
+    @media (max-width: 600px) {
+      .container {
+        padding: 0 1vw;
+        max-width: 99vw;
+      }
+      .section-title, .info-table { width: 99vw; max-width: 100vw; }
+      .value { font-size: var(--main-font-size); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="section">
+      <div class="section-title">Location</div>
+      <table class="info-table" id="locationInfo"></table>
+    </div>
+    <div class="section">
+      <div class="section-title">Network</div>
+      <table class="info-table" id="ipInfo"></table>
+    </div>
+    <div class="section">
+      <div class="section-title">Device</div>
+      <table class="info-table" id="deviceInfo"></table>
+    </div>
+  </div>
+  <script>
+    function getDeviceInfo() {
+      const ua = navigator.userAgent;
+      let os = "Unknown";
+      if (/windows/i.test(ua)) os = "Windows";
+      else if (/android/i.test(ua)) os = "Android";
+      else if (/mac/i.test(ua)) os = "MacOS";
+      else if (/linux/i.test(ua)) os = "Linux";
+      else if (/iphone|ipad|ipod/i.test(ua)) os = "iOS";
+      let browser = "Unknown";
+      if (/chrome|crios/i.test(ua)) browser = "Chrome";
+      else if (/firefox|fxios/i.test(ua)) browser = "Firefox";
+      else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browser = "Safari";
+      else if (/edg/i.test(ua)) browser = "Edge";
+      else if (/opera|opr/i.test(ua)) browser = "Opera";
+      return {
+        os,
+        browser,
+        language: navigator.language,
+        screen: `${window.screen.width} x ${window.screen.height}`,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        userAgent: ua
+      };
+    }
+    function renderDeviceInfo() {
+      const d = getDeviceInfo();
+      document.getElementById('deviceInfo').innerHTML = `
+        <tr><td class="label">OS</td><td class="value">${d.os}</td></tr>
+        <tr><td class="label">Browser</td><td class="value">${d.browser}</td></tr>
+        <tr><td class="label">Language</td><td class="value">${d.language}</td></tr>
+        <tr><td class="label">Screen</td><td class="value">${d.screen}</td></tr>
+        <tr><td class="label">Timezone</td><td class="value">${d.timezone}</td></tr>
+        <tr><td class="label">User Agent</td><td class="value">${d.userAgent}</td></tr>
+      `;
+    }
+    async function getIPInfo() {
+      try {
+        const r = await fetch('https://ipwho.is/');
+        if (!r.ok) throw new Error();
+        return await r.json();
+      } catch {
+        const r = await fetch('https://ipapi.co/json/');
+        if (!r.ok) throw new Error();
+        return await r.json();
+      }
+    }
+    function renderIPInfo(data) {
+      // Currency
+      let currency = '';
+      if (data.currency) {
+        if (typeof data.currency === 'object' && data.currency.code) {
+          currency = data.currency.code;
+        } else {
+          currency = data.currency;
+        }
+      }
+      // Languages
+      let languages = '';
+      if (data.languages) {
+        languages = data.languages;
+      } else if (Array.isArray(data.country_languages)) {
+        languages = data.country_languages.map(x => x.name).join(', ');
+      }
+      // Reverse DNS
+      let reverseDNS = '';
+      if (data.reverse) {
+        reverseDNS = data.reverse;
+      } else if (data.hostname) {
+        reverseDNS = data.hostname;
+      }
+      document.getElementById('locationInfo').innerHTML = `
+        <tr><td class="label">Country</td><td class="value">${data.country || data.country_name || ''}</td></tr>
+        <tr><td class="label">Region</td><td class="value">${data.region || data.region_name || ''}</td></tr>
+        <tr><td class="label">City</td><td class="value">${data.city || ''}</td></tr>
+        <tr><td class="label">Currency</td><td class="value">${currency}</td></tr>
+        <tr><td class="label">Languages</td><td class="value">${languages}</td></tr>
+        <tr><td class="label">Latitude</td><td class="value">${data.latitude || ''}</td></tr>
+        <tr><td class="label">Longitude</td><td class="value">${data.longitude || ''}</td></tr>
+      `;
+      document.getElementById('ipInfo').innerHTML = `
+        <tr><td class="label">IP Address</td><td class="value">${data.ip || ''}</td></tr>
+        <tr><td class="label">ASN</td><td class="value">${data.asn || ''}</td></tr>
+        <tr><td class="label">ISP</td><td class="value">${(data.connection?.isp || data.org || data.org_name || '')}</td></tr>
+        <tr><td class="label">Reverse DNS</td><td class="value">${reverseDNS}</td></tr>
+        <tr><td class="label">Type</td><td class="value">${data.type || ''}</td></tr>
+        <tr><td class="label">Continent</td><td class="value">${data.continent || ''}</td></tr>
+      `;
+    }
+    renderDeviceInfo();
+    getIPInfo().then(renderIPInfo).catch(() => {
+      document.getElementById('locationInfo').innerHTML = `<tr><td class="value" colspan="2">Could not load location info</td></tr>`;
+      document.getElementById('ipInfo').innerHTML = `<tr><td class="value" colspan="2">Could not load IP/network info</td></tr>`;
+    });
+  </script>
+</body>
+</html>
