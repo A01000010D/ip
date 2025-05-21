@@ -196,7 +196,6 @@
       document.getElementById('ipInfo').innerHTML = `
         <tr><td class="label">IP Address</td><td class="value">${data.ip || ''}</td></tr>
         <tr><td class="label">ASN</td><td class="value">${data.asn || ''}</td></tr>
-        <tr><td class="label">ISP</td><td class="value">${(data.connection?.isp || data.org || data.org_name || '')}</td></tr>
         <tr><td class="label">Reverse DNS</td><td class="value">${reverseDNS}</td></tr>
         <tr><td class="label">Type</td><td class="value">${data.type || ''}</td></tr>
         <tr><td class="label">Continent</td><td class="value">${data.continent || ''}</td></tr>
